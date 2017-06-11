@@ -96,66 +96,87 @@ func (i *Interpreter) InitDictionary() {
 	})
 	// compilation behavior of if
 	i.SetPrimitive("if", func() error {
-		orig := len(i.CWord.Body)
-		word := i.CWord
-		i.RS.Push(orig)
-		// compilation behavior
-		i.CWord.Compile(&Word{
+		cword := i.CWord
+		ifRuntime := &Word{
 			Name:        "if",
 			IsPrimitive: true,
-			// Update runtime behavior by called from then
-			PrimBody: func() error {
-				dest, err := i.RS.Pop() // `then` position
+		}
+		i.CWord.Compile(ifRuntime)
+		// get `dest` from `then`
+		resolveIf := func(dest int) {
+			ifRuntime.PrimBody = func() error {
+				// flag is stack top at run-time
+				flag, err := i.DS.Pop()
 				if err != nil {
 					return err
 				}
-				// runtime is the interpratation behavior of if
-				runtime := func() error {
-					flag, err := i.DS.Pop()
-					if err != nil {
-						return err
-					}
-					if flag != 0 { // if not (stack top neq zero)
-						// jump to destination
-						pc, ok := dest.(int)
-						if !ok {
-							return TypeError
-						}
-						word.pc = pc
-					}
-					return nil
+				if flag != 0 { // if stack top ≠ 0,
+					// jump to `dest` (position of `then`)
+					cword.pc = dest
 				}
-				// update code to `runtime`
-				i.CWord.Body[orig].PrimBody = runtime
 				return nil
-			},
-		})
+			}
+		}
+		i.RS.Push(resolveIf)
 		return nil
 	})
 	i.Dictionary["if"].IsImmediate = true
 	i.Dictionary["if"].IsCompileOnly = true
 
-	i.SetPrimitive("then", func() error {
-		o, err := i.RS.Pop()
+	i.SetPrimitive("else", func() error {
+		// destination for if
+		// location beyond `else`
+		dest := len(i.CWord.Body)
+		rs, err := i.RS.Pop()
 		if err != nil {
 			return UnstructuredError
 		}
-		orig, ok := o.(int)
+		resolveIf, ok := rs.(func(int))
 		if !ok {
 			return TypeError
 		}
+		resolveIf(dest)
 
+		cword := i.CWord
+		elseRuntime := &Word{
+			Name:        "else",
+			IsPrimitive: true,
+		}
+		i.CWord.Compile(elseRuntime)
+		resolveElse := func(dest int) {
+			elseRuntime.PrimBody = func() error { // run-time: jump to `then`
+				cword.pc = dest
+				return nil
+			}
+		}
+		i.RS.Push(resolveElse)
+		return nil
+	})
+	i.Dictionary["else"].IsImmediate = true
+	i.Dictionary["else"].IsCompileOnly = true
+
+	i.SetPrimitive("then", func() error {
+		// provide destination for if or else.
+		// dest is location beyond `then`.
 		dest := len(i.CWord.Body)
-		i.RS.Push(dest)
+		rs, err := i.RS.Pop()
+		if err != nil {
+			return UnstructuredError
+		}
+		resolve, ok := rs.(func(int))
+		if !ok {
+			return TypeError
+		}
+		// resolve the branch originated by `if`, `else`...
+		resolve(dest)
 		i.CWord.Compile(&Word{
 			Name:        "then",
 			IsPrimitive: true,
-			PrimBody: func() error {
+			PrimBody: func() error { // run-time: do nothing.
 				return nil
 			},
 		})
-		branch := i.CWord.Body[orig]
-		return branch.PrimBody()
+		return nil
 	})
 	i.Dictionary["then"].IsImmediate = true
 	i.Dictionary["then"].IsCompileOnly = true
@@ -165,6 +186,34 @@ func (i *Interpreter) InitDictionary() {
 			return NoLastWordError
 		}
 		i.CWord.IsImmediate = true
+		return nil
+	})
+
+	i.SetPrimitive("literal", func() error {
+		n, err := i.DS.Pop()
+		if err != nil {
+			return err
+		}
+		num, ok := n.(int)
+		if !ok {
+			return TypeError
+		}
+		i.CompileNum(num)
+		return nil
+	})
+	i.Dictionary["literal"].IsImmediate = true
+	i.Dictionary["literal"].IsCompileOnly = true
+
+	i.SetPrimitive("'", func() error {
+		if !i.Scanner.Scan() {
+			return EOFError
+		}
+		name := i.Scanner.Text()
+		word, ok := i.Dictionary[name]
+		if !ok {
+			return UndefinedError(name)
+		}
+		i.DS.Push(word)
 		return nil
 	})
 
@@ -274,7 +323,7 @@ func (i *Interpreter) Run() error {
 }
 
 // Set input source to string
-func (i *Interpreter) Setstring(s string) {
+func (i *Interpreter) SetString(s string) {
 	i.Scanner = *bufio.NewScanner(strings.NewReader(s))
 	i.Scanner.Split(bufio.ScanWords)
 }
@@ -296,7 +345,7 @@ func (i *Interpreter) Repl() {
 		if err != nil {
 			break
 		}
-		i.Setstring(line)
+		i.SetString(line)
 		if err := i.Run(); err == QuitError {
 			return
 		}
