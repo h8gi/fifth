@@ -1,9 +1,15 @@
 package fifth
 
+import "fmt"
+
 type Value interface{}
 
 type Stack struct {
 	data []Value
+}
+
+func (s *Stack) String() string {
+	return fmt.Sprintf("%v", s.data)
 }
 
 func (s *Stack) Push(elm Value) {
