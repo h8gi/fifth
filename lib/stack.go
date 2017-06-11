@@ -1,14 +1,16 @@
 package fifth
 
+type Value interface{}
+
 type Stack struct {
-	data []int64
+	data []Value
 }
 
-func (s *Stack) Push(elm int64) {
+func (s *Stack) Push(elm Value) {
 	s.data = append(s.data, elm)
 }
 
-func (s *Stack) Pop() (int64, error) {
+func (s *Stack) Pop() (Value, error) {
 	if len(s.data) == 0 {
 		return 0, UnderFlowError
 	}
@@ -19,20 +21,30 @@ func (s *Stack) Pop() (int64, error) {
 }
 
 func (s *Stack) Clear() {
-	s.data = []int64{}
+	s.data = []Value{}
 }
 
-func (s *Stack) MakeBinFunc(op func(int64, int64) int64) func() error {
+func (s *Stack) MakeBinFunc(op func(int, int) int) func() error {
 	return func() error {
 		n, err := s.Pop()
 		if err != nil {
 			return err
 		}
+		ni, ok := n.(int)
+		if !ok {
+			return TypeError
+		}
+
 		m, err := s.Pop()
 		if err != nil {
 			return err
 		}
-		s.Push(op(n, m))
+		mi, ok := m.(int)
+		if !ok {
+			return TypeError
+		}
+
+		s.Push(op(ni, mi))
 		return err
 	}
 }
