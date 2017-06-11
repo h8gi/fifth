@@ -1,2 +1,5 @@
 * fifth
 forth in go
+
+** Stack
+=interface{}= がつっこめる。
