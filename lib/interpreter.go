@@ -14,8 +14,8 @@ type Dictionary map[string]*Word
 
 type Interpreter struct {
 	Scanner    bufio.Scanner
-	S          Stack // Data stack
-	R          Stack // Return stack??
+	DS         Stack // Data stack
+	RS         Stack // Return stack??
 	Dictionary Dictionary
 	IsCompile  bool
 	CWord      *Word // current word
@@ -32,15 +32,15 @@ func (i *Interpreter) SetPrimitive(name string, pbody func() error) {
 
 func (i *Interpreter) InitDictionary() {
 	i.SetPrimitive("+",
-		i.S.MakeBinFunc(func(n, m int64) int64 { return n + m }))
+		i.DS.MakeBinFunc(func(n, m int) int { return n + m }))
 	i.SetPrimitive("-",
-		i.S.MakeBinFunc(func(n, m int64) int64 { return m - n }))
+		i.DS.MakeBinFunc(func(n, m int) int { return m - n }))
 	i.SetPrimitive("*",
-		i.S.MakeBinFunc(func(n, m int64) int64 { return n * m }))
+		i.DS.MakeBinFunc(func(n, m int) int { return n * m }))
 	i.SetPrimitive("/",
-		i.S.MakeBinFunc(func(n, m int64) int64 { return m / n }))
+		i.DS.MakeBinFunc(func(n, m int) int { return m / n }))
 	i.SetPrimitive(".", func() error {
-		n, err := i.S.Pop()
+		n, err := i.DS.Pop()
 		if err != nil {
 			return err
 		}
@@ -48,18 +48,20 @@ func (i *Interpreter) InitDictionary() {
 		return nil
 	})
 	i.SetPrimitive("dup", func() error {
-		n, err := i.S.Pop()
+		n, err := i.DS.Pop()
 		if err != nil {
 			return err
 		}
-		i.S.Push(n)
-		i.S.Push(n)
+		i.DS.Push(n)
+		i.DS.Push(n)
 		return nil
 	})
 	i.SetPrimitive(".s", func() error {
-		for _, num := range i.S.data {
-			fmt.Print(num, " ")
-		}
+		fmt.Println(i.DS.data)
+		return nil
+	})
+	i.SetPrimitive(".r", func() error {
+		fmt.Println(i.RS.data)
 		return nil
 	})
 	i.SetPrimitive(":", func() error {
@@ -67,11 +69,9 @@ func (i *Interpreter) InitDictionary() {
 		if !i.Scanner.Scan() {
 			return EOFError
 		}
-		name := i.Scanner.Text()
-		word := Word{
-			Name: name,
+		i.CWord = &Word{
+			Name: i.Scanner.Text(),
 		}
-		i.CWord = &word
 		return nil
 	})
 	i.SetPrimitive(";", func() error {
@@ -79,7 +79,8 @@ func (i *Interpreter) InitDictionary() {
 		i.Dictionary[i.CWord.Name] = i.CWord
 		return nil
 	})
-	i.Dictionary[";"].Immediate = true
+	i.Dictionary[";"].IsImmediate = true
+	i.Dictionary[";"].IsCompileOnly = true
 
 	i.SetPrimitive("see", func() error {
 		if !i.Scanner.Scan() {
@@ -90,31 +91,87 @@ func (i *Interpreter) InitDictionary() {
 		if !ok {
 			return UndefinedError(name)
 		}
-		if word.IsPrimitive {
-			fmt.Printf("primitive word: %q ", name)
-			return nil
-		}
-
-		fmt.Println(":", name)
-		fmt.Print(" ")
-		for _, w := range word.Body {
-			fmt.Printf(" %s", w.Name)
-		}
-		fmt.Print(" ; ")
-		if word.Immediate {
-			fmt.Print("immediate ")
-		}
+		fmt.Print(word)
 		return nil
 	})
+	// compilation behavior of if
+	i.SetPrimitive("if", func() error {
+		orig := len(i.CWord.Body)
+		word := i.CWord
+		i.RS.Push(orig)
+		// compilation behavior
+		i.CWord.Compile(&Word{
+			Name:        "if",
+			IsPrimitive: true,
+			// Update runtime behavior by called from then
+			PrimBody: func() error {
+				dest, err := i.RS.Pop() // `then` position
+				if err != nil {
+					return err
+				}
+				// runtime is the interpratation behavior of if
+				runtime := func() error {
+					flag, err := i.DS.Pop()
+					if err != nil {
+						return err
+					}
+					if flag != 0 { // if not (stack top neq zero)
+						// jump to destination
+						pc, ok := dest.(int)
+						if !ok {
+							return TypeError
+						}
+						word.pc = pc
+					}
+					return nil
+				}
+				// update code to `runtime`
+				i.CWord.Body[orig].PrimBody = runtime
+				return nil
+			},
+		})
+		return nil
+	})
+	i.Dictionary["if"].IsImmediate = true
+	i.Dictionary["if"].IsCompileOnly = true
+
+	i.SetPrimitive("then", func() error {
+		o, err := i.RS.Pop()
+		if err != nil {
+			return UnstructuredError
+		}
+		orig, ok := o.(int)
+		if !ok {
+			return TypeError
+		}
+
+		dest := len(i.CWord.Body)
+		i.RS.Push(dest)
+		i.CWord.Compile(&Word{
+			Name:        "then",
+			IsPrimitive: true,
+			PrimBody: func() error {
+				return nil
+			},
+		})
+		branch := i.CWord.Body[orig]
+		return branch.PrimBody()
+	})
+	i.Dictionary["then"].IsImmediate = true
+	i.Dictionary["then"].IsCompileOnly = true
 
 	i.SetPrimitive("immediate", func() error {
-		i.CWord.Immediate = true
+		if i.CWord == nil {
+			return NoLastWordError
+		}
+		i.CWord.IsImmediate = true
 		return nil
 	})
 
-	i.Dictionary["square"] = &Word{
-		Body: []*Word{i.Dictionary["dup"], i.Dictionary["*"]},
-	}
+	i.SetPrimitive("bye", func() error {
+		return QuitError
+	})
+
 }
 
 func NewInterpreter() *Interpreter {
@@ -131,8 +188,10 @@ func (i *Interpreter) Interpret(word *Word) error {
 	if word.IsPrimitive {
 		return word.PrimBody()
 	}
+
 	// compound word
-	for _, w := range word.Body {
+	for word.pc = 0; word.pc < len(word.Body); word.pc += 1 {
+		w := word.Body[word.pc]
 		if err := i.Interpret(w); err != nil {
 			return err
 		}
@@ -142,23 +201,24 @@ func (i *Interpreter) Interpret(word *Word) error {
 
 // Execute compilation behavior of word
 func (i *Interpreter) Compile(word *Word) error {
-	if word.Immediate {
+	if word.IsImmediate {
 		return i.Interpret(word)
 	}
-	i.CWord.Body = append(i.CWord.Body, word)
+	i.CWord.Compile(word)
 	return nil
 }
 
 // Compile literal
-func (i *Interpreter) CompileNum(num int64) {
-	i.CWord.Body = append(i.CWord.Body, &Word{
+func (i *Interpreter) CompileNum(num int) {
+	w := &Word{
 		Name:        strconv.Itoa(int(num)),
 		IsPrimitive: true,
 		PrimBody: func() error {
-			i.S.Push(num)
+			i.DS.Push(num)
 			return nil
 		},
-	})
+	}
+	i.CWord.Compile(w)
 }
 
 func (i *Interpreter) Execute(text string) error {
@@ -167,6 +227,9 @@ func (i *Interpreter) Execute(text string) error {
 		if i.IsCompile {
 			return i.Compile(word)
 		} else {
+			if word.IsCompileOnly {
+				return CompileOnlyError(word.Name)
+			}
 			return i.Interpret(word)
 		}
 	}
@@ -177,27 +240,27 @@ func (i *Interpreter) Execute(text string) error {
 	}
 
 	if i.IsCompile {
-		i.CompileNum(num)
+		i.CompileNum(int(num))
 	} else {
-		i.S.Push(num)
+		i.DS.Push(int(num))
 	}
 	return nil
 }
 
 func (i *Interpreter) Abort() {
-	i.S.Clear()
-	i.R.Clear()
+	i.DS.Clear()
+	i.RS.Clear()
 	i.IsCompile = false
 	i.CWord = nil
 }
 
 // Execute until EOF
-func (i *Interpreter) Run() {
+func (i *Interpreter) Run() error {
 	for {
 		// EOF
 		if !i.Scanner.Scan() {
-			fmt.Println("ok")
-			return
+			fmt.Println(" ok")
+			return nil
 		}
 
 		text := i.Scanner.Text()
@@ -205,7 +268,7 @@ func (i *Interpreter) Run() {
 		if err != nil {
 			i.Abort()
 			fmt.Println(err.Error())
-			return
+			return err
 		}
 	}
 }
@@ -217,18 +280,25 @@ func (i *Interpreter) Setstring(s string) {
 }
 
 func (i *Interpreter) Repl() {
-	rl, err := readline.New(fmt.Sprintf("<%d> ", len(i.S.data)))
+	rl, err := readline.New(fmt.Sprintf("%d> ", len(i.DS.data)))
 	if err != nil {
 		panic(err)
 	}
 	defer rl.Close()
 	for {
-		rl.SetPrompt(fmt.Sprintf("<%d> ", len(i.S.data)))
+		if i.IsCompile {
+			rl.SetPrompt("compile> ")
+		} else {
+			rl.SetPrompt(fmt.Sprintf("%d> ", len(i.DS.data)))
+		}
+
 		line, err := rl.Readline()
 		if err != nil {
 			break
 		}
 		i.Setstring(line)
-		i.Run()
+		if err := i.Run(); err == QuitError {
+			return
+		}
 	}
 }
