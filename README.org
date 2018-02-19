@@ -2,4 +2,4 @@
 forth in go
 
 ** Stack
-=interface{}= がつっこめる。
+=interface{}= がつっこめない
