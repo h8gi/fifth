@@ -9,7 +9,7 @@ type Word struct {
 	IsCompileOnly bool
 	PrimBody      func() error
 	Body          []*Word
-	pc            int
+	pc            int // program counter
 }
 
 func (w *Word) String() string {

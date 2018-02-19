@@ -10,8 +10,6 @@ import (
 	"github.com/chzyer/readline"
 )
 
-type Dictionary map[string]*Word
-
 type Interpreter struct {
 	Scanner    bufio.Scanner
 	DS         Stack // Data stack
@@ -23,13 +21,14 @@ type Interpreter struct {
 }
 
 func (i *Interpreter) SetPrimitive(name string, pbody func() error) {
-	i.Dictionary[name] = &Word{
+	i.Dictionary.Set(name, &Word{
 		Name:        name,
 		IsPrimitive: true,
 		PrimBody:    pbody,
-	}
+	})
 }
 
+// Initialize interpreter's dictionary
 func (i *Interpreter) InitDictionary() {
 	i.SetPrimitive("+",
 		i.DS.MakeBinFunc(func(n, m int) int { return n + m }))
@@ -272,7 +271,7 @@ func (i *Interpreter) CompileNum(num int) {
 
 func (i *Interpreter) Execute(text string) error {
 	// Look text up in the dictionary.
-	if word, ok := i.Dictionary[text]; ok {
+	if word, ok := i.Dictionary.Get(text); ok {
 		if i.IsCompile {
 			return i.Compile(word)
 		} else {
