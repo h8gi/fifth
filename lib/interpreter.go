@@ -16,7 +16,7 @@ type Interpreter struct {
 	RS         Stack // Return stack??
 	Dictionary Dictionary
 	IsCompile  bool
-	CWord      *Word // current word
+	CWord      *Word // the pointer to the word being compiled
 	Error      error
 }
 
@@ -249,9 +249,11 @@ func (i *Interpreter) Interpret(word *Word) error {
 
 // Execute compilation behavior of word
 func (i *Interpreter) Compile(word *Word) error {
+	// if the word is immediate, execute normal behavior
 	if word.IsImmediate {
 		return i.Interpret(word)
 	}
+	// execute compilation behavior of word
 	i.CWord.Compile(word)
 	return nil
 }
@@ -295,6 +297,7 @@ func (i *Interpreter) Execute(text string) error {
 	return nil
 }
 
+// Reset the stacks and interpreter.
 func (i *Interpreter) Abort() {
 	i.DS.Clear()
 	i.RS.Clear()
@@ -327,7 +330,9 @@ func (i *Interpreter) SetString(s string) {
 	i.Scanner.Split(bufio.ScanWords)
 }
 
+// Run repl.
 func (i *Interpreter) Repl() {
+	fmt.Println("こんにちは!")
 	rl, err := readline.New(fmt.Sprintf("%d> ", len(i.DS.data)))
 	if err != nil {
 		panic(err)
