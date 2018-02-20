@@ -6,8 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/chzyer/readline"
 )
 
 type Interpreter struct {
@@ -136,30 +134,4 @@ func (i *Interpreter) Run() error {
 func (i *Interpreter) SetString(s string) {
 	i.Scanner = *bufio.NewScanner(strings.NewReader(s))
 	i.Scanner.Split(bufio.ScanWords)
-}
-
-// Run repl.
-func (i *Interpreter) Repl() {
-	fmt.Println("こんにちは!")
-	rl, err := readline.New(fmt.Sprintf("%d> ", len(i.DS.data)))
-	if err != nil {
-		panic(err)
-	}
-	defer rl.Close()
-	for {
-		if i.IsCompile {
-			rl.SetPrompt("compile> ")
-		} else {
-			rl.SetPrompt(fmt.Sprintf("%d> ", len(i.DS.data)))
-		}
-
-		line, err := rl.Readline()
-		if err != nil {
-			break
-		}
-		i.SetString(line)
-		if err := i.Run(); err == QuitError {
-			return
-		}
-	}
 }
