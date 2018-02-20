@@ -7,10 +7,12 @@ type Word struct {
 	IsImmediate   bool
 	IsPrimitive   bool
 	IsCompileOnly bool
-	PrimBody      func() error
+	PrimBody      PrimBody
 	Body          []*Word
 	pc            int // program counter
 }
+
+type PrimBody func() error
 
 func (w *Word) String() string {
 	s := ""
