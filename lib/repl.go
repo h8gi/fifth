@@ -49,7 +49,7 @@ func (i *Interpreter) completer() *readline.PrefixCompleter {
 
 func (i *Interpreter) Repl() {
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       "\033[31m»\033[0m ",
+		Prompt:       i.prompt(),
 		AutoComplete: i.completer(),
 		EOFPrompt:    "\nbye!",
 	})
