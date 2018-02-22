@@ -3,7 +3,7 @@ package fifth
 import "fmt"
 
 func UndefinedError(text string) error {
-	return fmt.Errorf("Undefined word %q", text)
+	return fmt.Errorf("Undefined word: %s", text)
 }
 
 var UnderFlowError = fmt.Errorf("Stack underflow")
@@ -17,7 +17,7 @@ var QuitError = fmt.Errorf("Bye!")
 var UnstructuredError = fmt.Errorf("unstructured control flow")
 
 func CompileOnlyError(text string) error {
-	return fmt.Errorf("compile only word %q", text)
+	return fmt.Errorf("compile only word: %s", text)
 }
 
 var TypeError = fmt.Errorf("type mismatch")
