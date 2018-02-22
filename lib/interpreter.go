@@ -2,7 +2,6 @@ package fifth
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -77,7 +76,8 @@ func (i *Interpreter) CompileNum(num int) {
 	i.CWord.Compile(w)
 }
 
-func (i *Interpreter) Execute(text string) error {
+// eval string and execute it
+func (i *Interpreter) EvalText(text string) error {
 	// Look text up in the dictionary.
 	if word, ok := i.Dictionary.Get(text); ok {
 		if i.IsCompile {
@@ -116,15 +116,14 @@ func (i *Interpreter) Run() error {
 	for {
 		// EOF
 		if !i.Scanner.Scan() {
-			fmt.Println(" ok")
 			return nil
 		}
 
 		text := i.Scanner.Text()
-		err := i.Execute(text)
+		err := i.EvalText(text)
 		if err != nil {
 			i.Abort()
-			fmt.Println(err.Error())
+			// fmt.Println(err.Error())
 			return err
 		}
 	}

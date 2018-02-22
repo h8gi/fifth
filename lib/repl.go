@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	COLOR_RED   = "\033[0;31m"
 	COLOR_GREEN = "\033[1;32m"
 	COLOR_BLUE  = "\033[1;34m"
 
@@ -16,7 +17,7 @@ const (
 
 func (i *Interpreter) prompt() string {
 	if i.IsCompile {
-		return fmt.Sprintf("%sc>%s ", COLOR_BLUE, COLOR_OFF)
+		return fmt.Sprintf("%scompile:%s ", COLOR_BLUE, COLOR_OFF)
 	} else {
 		return fmt.Sprintf("%s%d>%s ", COLOR_GREEN, len(i.DS.data), COLOR_OFF)
 	}
@@ -30,28 +31,11 @@ func (i *Interpreter) words(string) []string {
 	return names
 }
 
-// gomi
-func (i *Interpreter) completer() *readline.PrefixCompleter {
-	return readline.NewPrefixCompleter(
-		readline.PcItemDynamic(i.words,
-			readline.PcItemDynamic(i.words,
-				readline.PcItemDynamic(i.words,
-					readline.PcItemDynamic(i.words,
-						readline.PcItemDynamic(i.words,
-							readline.PcItemDynamic(i.words,
-								readline.PcItemDynamic(i.words,
-									readline.PcItemDynamic(i.words,
-										readline.PcItemDynamic(i.words,
-											readline.PcItemDynamic(i.words,
-												readline.PcItemDynamic(i.words))))))))))),
-	)
-}
-
 func (i *Interpreter) Repl() {
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt: i.prompt(),
-		// AutoComplete: i.completer(),
-		EOFPrompt: "\nbye!",
+		Prompt:          i.prompt(),
+		EOFPrompt:       "\nbye!",
+		InterruptPrompt: fmt.Sprintf("\n%sinterrupt%s", COLOR_RED, COLOR_OFF),
 	})
 	if err != nil {
 		panic(err)
@@ -62,12 +46,20 @@ func (i *Interpreter) Repl() {
 		rl.SetPrompt(i.prompt())
 
 		line, err := rl.Readline()
-		if err != nil {
+		if err == readline.ErrInterrupt {
+			i.IsCompile = false
+			continue
+		} else if err != nil {
 			break
 		}
+
 		i.SetString(line)
-		if err := i.Run(); err == QuitError {
+		err = i.Run()
+		if err == QuitError {
 			return
+		}
+		if err != nil {
+			fmt.Printf("%s%s%s\n", COLOR_RED, err.Error(), COLOR_OFF)
 		}
 	}
 }
