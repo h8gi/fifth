@@ -46,10 +46,12 @@ func (i *Interpreter) Repl() {
 		rl.SetPrompt(i.prompt())
 
 		line, err := rl.Readline()
-		if err == readline.ErrInterrupt {
-			i.IsCompile = false
-			continue
-		} else if err != nil {
+		if err != nil {
+			i.Abort()
+			if err == readline.ErrInterrupt {
+				i.IsCompile = false
+				continue
+			}
 			break
 		}
 
