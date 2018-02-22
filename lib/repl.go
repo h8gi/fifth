@@ -49,9 +49,9 @@ func (i *Interpreter) completer() *readline.PrefixCompleter {
 
 func (i *Interpreter) Repl() {
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       i.prompt(),
-		AutoComplete: i.completer(),
-		EOFPrompt:    "\nbye!",
+		Prompt: i.prompt(),
+		// AutoComplete: i.completer(),
+		EOFPrompt: "\nbye!",
 	})
 	if err != nil {
 		panic(err)
