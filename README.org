@@ -1,5 +1,9 @@
 * fifth
 forth in go
 
-** Stack
-=interface{}= がつっこめない
+** Usage
+
+#+BEGIN_SRC shell
+go get github.com/h8gi/fifth
+./fifth
+#+END_SRC
