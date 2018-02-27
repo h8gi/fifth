@@ -34,7 +34,6 @@ func (i *Interpreter) words(string) []string {
 func (i *Interpreter) Repl() {
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          i.prompt(),
-		EOFPrompt:       "\nbye!",
 		InterruptPrompt: fmt.Sprintf("\n%sinterrupt%s", COLOR_RED, COLOR_OFF),
 	})
 	if err != nil {
