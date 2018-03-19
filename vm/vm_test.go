@@ -21,7 +21,7 @@ func TestIf(t *testing.T) {
 	vm.memory[0] = OpLit
 	vm.memory[1] = Cell(0) // push false
 	vm.memory[2] = OpIf
-	vm.memory[3] = Cell(5) // jump address (5 mean 6)
+	vm.memory[3] = Cell(5) // jump address (5 means 6)
 	vm.memory[4] = OpLit
 	vm.memory[5] = Cell(42) // true value
 	vm.memory[6] = OpLit

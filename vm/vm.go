@@ -270,6 +270,8 @@ func (vm *VM) InstCall() error {
 	return nil
 }
 
+// pop the return address from return stack and
+// set next program counter to it.
 func (vm *VM) InstExit() error {
 	addr, err := vm.rs.pop()
 	if err != nil {
