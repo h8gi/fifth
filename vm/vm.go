@@ -1,8 +1,12 @@
 package vm
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+	"os"
+)
 
-type Cell int
+type Cell int32
 
 func (c Cell) Bool() bool {
 	return c != 0
@@ -59,6 +63,38 @@ func NewVM() *VM {
 	}
 	vm.InstallOps()
 	return vm
+}
+
+// func (vm *VM) LoadFile(filename string) error {
+// 	f, err := os.Open(filename)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	reader := bufio.NewReader(f)
+// 	for i := 0; i < memorySize; i++ {
+// 		b, err := reader.Read
+// 		if err != nil {
+// 			return err
+// 		}
+// 		vm.memory[i] = Cell(int(b))
+// 	}
+// 	return nil
+// }
+
+func (vm *VM) DumpFile(filename string) error {
+	f, err := os.Create(filename)
+	defer f.Close()
+	if err != nil {
+		return err
+	}
+	for i := 0; i < memorySize; i++ {
+		binary.Read()
+		cell := vm.memory[i]
+		fmt.Println(cell)
+		fmt.Println(cell >> 8)
+
+	}
+	return nil
 }
 
 func (vm *VM) Run() error {

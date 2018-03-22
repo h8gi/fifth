@@ -2,6 +2,14 @@ package vm
 
 import "testing"
 
+func TestDump(t *testing.T) {
+	vm := NewVM()
+	vm.memory[0] = OpLit
+	vm.memory[1] = Cell(200)
+	vm.memory[2] = OpEnd
+	vm.DumpFile("test")
+}
+
 func TestOps(t *testing.T) {
 	vm := NewVM()
 	vm.memory[0] = OpLit
