@@ -2,7 +2,7 @@ package fifth
 
 import (
 	"bufio"
-	"os"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -27,9 +27,9 @@ func (i *Interpreter) SetPrimitive(name string, pbody PrimBody) {
 
 // Initialize interpreter's dictionary
 
-func NewInterpreter() *Interpreter {
+func NewInterpreter(r io.Reader) *Interpreter {
 	i := new(Interpreter)
-	i.Scanner = *bufio.NewScanner(os.Stdin)
+	i.Scanner = *bufio.NewScanner(r)
 	i.Scanner.Split(bufio.ScanWords)
 	i.Dictionary = make(Dictionary)
 	i.LoadPrimitives()

@@ -15,7 +15,7 @@ const (
 	COLOR_OFF = "\033[m"
 )
 
-func (i *Interpreter) prompt() string {
+func (i *Interpreter) Prompt() string {
 	if i.IsCompile {
 		return fmt.Sprintf("%scompile:%s ", COLOR_BLUE, COLOR_OFF)
 	} else {
@@ -33,7 +33,7 @@ func (i *Interpreter) words(string) []string {
 
 func (i *Interpreter) Repl() {
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:          i.prompt(),
+		Prompt:          i.Prompt(),
 		InterruptPrompt: fmt.Sprintf("\n%sinterrupt%s", COLOR_RED, COLOR_OFF),
 	})
 	if err != nil {
@@ -42,7 +42,7 @@ func (i *Interpreter) Repl() {
 	defer rl.Close()
 
 	for {
-		rl.SetPrompt(i.prompt())
+		rl.SetPrompt(i.Prompt())
 
 		line, err := rl.Readline()
 		if err != nil {
