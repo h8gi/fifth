@@ -77,9 +77,9 @@ func (i *Interpreter) CompileNum(num int) {
 }
 
 // eval string and execute it
-func (i *Interpreter) EvalText(text string) error {
-	// Look text up in the dictionary.
-	if word, ok := i.Dictionary.Get(text); ok {
+func (i *Interpreter) EvalToken(token string) error {
+	// Look token up in the dictionary.
+	if word, ok := i.Dictionary.Get(token); ok {
 		if i.IsCompile {
 			return i.Compile(word)
 		} else {
@@ -89,10 +89,10 @@ func (i *Interpreter) EvalText(text string) error {
 			return i.Interpret(word)
 		}
 	}
-	// read text as number.
-	num, err := strconv.ParseInt(text, 10, 64)
+	// read token as number.
+	num, err := strconv.ParseInt(token, 10, 64)
 	if err != nil {
-		return UndefinedError(text)
+		return UndefinedError(token)
 	}
 
 	if i.IsCompile {
@@ -119,8 +119,8 @@ func (i *Interpreter) Run() error {
 			return nil
 		}
 
-		text := i.Scanner.Text()
-		err := i.EvalText(text)
+		token := i.Scanner.Text()
+		err := i.EvalToken(token)
 		if err != nil {
 			i.Abort()
 			// fmt.Println(err.Error())
