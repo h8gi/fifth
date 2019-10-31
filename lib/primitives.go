@@ -121,7 +121,7 @@ func (i *Interpreter) see() error {
 	if !ok {
 		return UndefinedError(name)
 	}
-	fmt.Print(word)
+	fmt.Fprint(i.Writer, word)
 	return nil
 }
 
