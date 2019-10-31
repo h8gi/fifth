@@ -67,7 +67,7 @@ func (i *Interpreter) dot() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(n)
+	fmt.Fprintln(i.Writer, n)
 	return nil
 }
 
@@ -83,13 +83,13 @@ func (i *Interpreter) dup() error {
 }
 
 func (i *Interpreter) show() error {
-	fmt.Println(i.DS.data)
+	fmt.Fprintln(i.Writer, i.DS.data)
 	return nil
 
 }
 
 func (i *Interpreter) rShow() error {
-	fmt.Println(i.RS.data)
+	fmt.Fprintln(i.Writer, i.RS.data)
 	return nil
 
 }

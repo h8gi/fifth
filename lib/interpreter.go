@@ -3,12 +3,14 @@ package fifth
 import (
 	"bufio"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 )
 
 type Interpreter struct {
 	Scanner    bufio.Scanner
+	Writer     io.Writer
 	DS         Stack // Data stack
 	RS         Stack // Return stack??
 	Dictionary Dictionary
@@ -26,11 +28,10 @@ func (i *Interpreter) SetPrimitive(name string, pbody PrimBody) {
 }
 
 // Initialize interpreter's dictionary
-
-func NewInterpreter(r io.Reader) *Interpreter {
+func NewInterpreter() *Interpreter {
 	i := new(Interpreter)
-	i.Scanner = *bufio.NewScanner(r)
-	i.Scanner.Split(bufio.ScanWords)
+	i.SetReader(os.Stdin)
+	i.SetWriter(os.Stdout)
 	i.Dictionary = make(Dictionary)
 	i.LoadPrimitives()
 	return i
@@ -133,4 +134,15 @@ func (i *Interpreter) Run() error {
 func (i *Interpreter) SetString(s string) {
 	i.Scanner = *bufio.NewScanner(strings.NewReader(s))
 	i.Scanner.Split(bufio.ScanWords)
+}
+
+// Set reader
+func (i *Interpreter) SetReader(r io.Reader) {
+	i.Scanner = *bufio.NewScanner(r)
+	i.Scanner.Split(bufio.ScanWords)
+}
+
+// Set writer
+func (i *Interpreter) SetWriter(w io.Writer) {
+	i.Writer = w
 }
