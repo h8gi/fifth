@@ -26,6 +26,15 @@ func (s *Stack) Pop() (Value, error) {
 	return last, nil
 }
 
+// return top of stack
+func (s *Stack) Tos() (Value, error) {
+	if len(s.data) == 0 {
+		return 0, UnderFlowError
+	}
+
+	return s.data[len(s.data)-1], nil
+}
+
 func (s *Stack) Clear() {
 	s.data = []Value{}
 }

@@ -146,3 +146,8 @@ func (i *Interpreter) SetReader(r io.Reader) {
 func (i *Interpreter) SetWriter(w io.Writer) {
 	i.Writer = w
 }
+
+// Top of stack
+func (i *Interpreter) Tos() (Value, error) {
+	return i.DS.Tos()
+}
